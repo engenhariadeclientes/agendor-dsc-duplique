@@ -19,14 +19,13 @@ app.get("/ping", (req, res) => {
  * Webhook chamado pelo bloco final da Júlia (BotConversa) quando o lead
  * termina a conversa de qualificação.
  *
- * Payload esperado (mesmos nomes de variáveis já usados no BotConversa,
- * mais a variável nova "telefone_consultor"):
+ * Payload esperado (nomes de variáveis já existentes no BotConversa):
  * {
  *   "nome_completo": "Nome do lead",
  *   "telefone": "5551999998888",
  *   "Email": "lead@exemplo.com",
  *   "REGIÃO": "Rio Grande do Sul - outras cidades",
- *   "telefone_consultor": "5551996310323"
+ *   "Tell_consultor": "5551996310323"
  * }
  */
 app.post("/webhook/novo-negocio", async (req, res) => {
@@ -35,15 +34,15 @@ app.post("/webhook/novo-negocio", async (req, res) => {
   const telefone = body.telefone;
   const email = body.Email;
   const regiao = body["REGIÃO"];
-  const telefoneConsultor = body.telefone_consultor;
+  const telefoneConsultor = body.Tell_consultor;
 
   console.log("Payload recebido:", body);
 
   if (!nome || !telefoneConsultor) {
-    console.log("Payload incompleto - faltando nome_completo ou telefone_consultor");
+    console.log("Payload incompleto - faltando nome_completo ou Tell_consultor");
     return res.status(400).json({
       ok: false,
-      erro: "Campos obrigatórios: nome_completo e telefone_consultor",
+      erro: "Campos obrigatórios: nome_completo e Tell_consultor",
     });
   }
 
