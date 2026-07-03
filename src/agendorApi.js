@@ -100,10 +100,28 @@ async function criarNegocio({ organizationId, titulo, consultorId }) {
   return data.data;
 }
 
+/**
+ * Cria uma Nota na Empresa (aparece na aba "Ver histórico" > "Nota" no Agendor).
+ * Usa o endpoint de tasks sem especificar "type", que é como o Agendor
+ * registra uma nota simples de texto.
+ *
+ * @param {object} params
+ * @param {number} params.organizationId
+ * @param {string} params.texto
+ * @returns {Promise<object>}
+ */
+async function criarNota({ organizationId, texto }) {
+  const client = agendorClient();
+  const payload = { text: texto };
+  const { data } = await client.post(`/organizations/${organizationId}/tasks`, payload);
+  return data.data;
+}
+
 module.exports = {
   buscarConsultorPorTelefone,
   criarEmpresa,
   criarNegocio,
+  criarNota,
   FUNIL_DE_VENDAS_ID,
   ETAPA_CONTATO_INICIAL_SEQUENCE,
 };
