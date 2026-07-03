@@ -4,6 +4,7 @@ const {
   buscarConsultorPorTelefone,
   criarEmpresa,
   criarNegocio,
+  criarNota,
 } = require("./agendorApi");
 
 const app = express();
@@ -25,7 +26,8 @@ app.get("/ping", (req, res) => {
  *   "telefone": "5551999998888",
  *   "Email": "lead@exemplo.com",
  *   "REGIÃO": "Rio Grande do Sul - outras cidades",
- *   "Tell_consultor": "5551996310323"
+ *   "Tell_consultor": "5551996310323",
+ *   "resumo_conversa": "Lead subsíndico agendou conversa com consultor..."
  * }
  */
 app.post("/webhook/novo-negocio", async (req, res) => {
@@ -35,6 +37,7 @@ app.post("/webhook/novo-negocio", async (req, res) => {
   const email = body.Email;
   const regiao = body["REGIÃO"];
   const telefoneConsultor = body.Tell_consultor;
+  const resumoConversa = body.resumo_conversa;
 
   console.log("Payload recebido:", body);
 
@@ -75,7 +78,17 @@ app.post("/webhook/novo-negocio", async (req, res) => {
 
     console.log(`Empresa criada: ${empresa.name} (ID ${empresa.id})`);
 
-    // 3. Cria o Negócio nessa Empresa, no Funil de Vendas / Contato Inicial
+    // 3. Se veio um resumo da conversa, registra como Nota na Empresa
+    if (resumoConversa) {
+      try {
+        await criarNota({ organizationId: empresa.id, texto: resumoConversa });
+        console.log(`Nota registrada na empresa ${empresa.id}`);
+      } catch (notaErr) {
+        console.error("Erro ao criar nota (não bloqueia o fluxo):", notaErr.response?.data || notaErr.message);
+      }
+    }
+
+    // 4. Cria o Negócio nessa Empresa, no Funil de Vendas / Contato Inicial
     const negocio = await criarNegocio({
       organizationId: empresa.id,
       titulo: nome,
