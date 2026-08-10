@@ -78,14 +78,18 @@ app.post("/webhook/novo-negocio", async (req, res) => {
 
     console.log(`Empresa criada: ${empresa.name} (ID ${empresa.id})`);
 
-    // 3. Se veio um resumo da conversa, registra como Nota na Empresa
-    if (resumoConversa) {
-      try {
-        await criarNota({ organizationId: empresa.id, texto: resumoConversa });
-        console.log(`Nota registrada na empresa ${empresa.id}`);
-      } catch (notaErr) {
-        console.error("Erro ao criar nota (não bloqueia o fluxo):", notaErr.response?.data || notaErr.message);
-      }
+    // 3. Registra a Nota padrão na Empresa: qualificação + resumo + telefone
+    const notaTexto = [
+      "Lead qualificado pela Júlia - IA.",
+      `Resumo da conversa: ${resumoConversa || "não informado"}`,
+      `Telefone de contato: ${telefone || "não informado"}`,
+    ].join("\n");
+
+    try {
+      await criarNota({ organizationId: empresa.id, texto: notaTexto });
+      console.log(`Nota registrada na empresa ${empresa.id}`);
+    } catch (notaErr) {
+      console.error("Erro ao criar nota (não bloqueia o fluxo):", notaErr.response?.data || notaErr.message);
     }
 
     // 4. Cria o Negócio nessa Empresa, no Funil de Vendas / Contato Inicial
