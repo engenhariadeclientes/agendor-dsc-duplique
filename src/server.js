@@ -1,6 +1,5 @@
 require("dotenv").config();
 const express = require("express");
-const axios = require("axios");
 const {
   buscarConsultorPorTelefone,
   criarEmpresa,
@@ -15,28 +14,6 @@ const PORT = process.env.PORT || 8080;
 
 app.get("/ping", (req, res) => {
   res.json({ ok: true, service: "agendor-dsc-duplique" });
-});
-
-/**
- * ROTA TEMPORÁRIA DE DIAGNÓSTICO — remover depois de descobrir o nome
- * correto do campo "Origem" na API do Agendor.
- * Uso: abrir no navegador
- *   /debug/empresa/53466528
- *   /debug/negocio/44648849
- */
-app.get("/debug/:tipo/:id", async (req, res) => {
-  const { tipo, id } = req.params;
-  const rota = tipo === "negocio" ? `/deals/${id}` : `/organizations/${id}`;
-  try {
-    const client = axios.create({
-      baseURL: "https://api.agendor.com.br/v3",
-      headers: { Authorization: `Token ${process.env.AGENDOR_TOKEN}` },
-    });
-    const { data } = await client.get(rota);
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ ok: false, erro: err.response?.data || err.message });
-  }
 });
 
 /**
