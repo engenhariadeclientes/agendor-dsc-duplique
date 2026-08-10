@@ -22,9 +22,6 @@ function agendorClient() {
  * Busca o usuário (consultor) no Agendor cujo telefone (work, mobile ou whatsapp)
  * bate com o telefone informado, após normalização.
  *
- * Não usamos IDs fixos de propósito: o telefone é a chave estável, o consultor
- * por trás dele pode mudar ao longo do tempo.
- *
  * @param {string} telefoneConsultor
  * @returns {Promise<{id: number, name: string} | null>}
  */
@@ -61,7 +58,7 @@ async function criarEmpresa({ nome, telefone, email, regiao, consultorId }) {
   const client = agendorClient();
   const payload = {
     name: nome,
-    description: regiao ? `Lead via WhatsApp - Região: ${regiao}` : "Lead via WhatsApp",
+    description: regiao ? `Lead de anúncio - Região ${regiao}` : "Lead de anúncio",
     author: consultorId,
     ownerUser: consultorId,
     contact: {
@@ -78,6 +75,7 @@ async function criarEmpresa({ nome, telefone, email, regiao, consultorId }) {
 
 /**
  * Cria um Negócio vinculado a uma Empresa, no Funil de Vendas / Contato Inicial.
+ * Fonte fixa: "Redes Sociais".
  *
  * @param {object} params
  * @param {number} params.organizationId
@@ -94,6 +92,7 @@ async function criarNegocio({ organizationId, titulo, consultorId }) {
     author: consultorId,
     ownerUser: consultorId,
     dealStatusText: "ongoing",
+    source: "Redes Sociais",
   };
 
   const { data } = await client.post(`/organizations/${organizationId}/deals`, payload);
@@ -102,8 +101,6 @@ async function criarNegocio({ organizationId, titulo, consultorId }) {
 
 /**
  * Cria uma Nota na Empresa (aparece na aba "Ver histórico" > "Nota" no Agendor).
- * Usa o endpoint de tasks sem especificar "type", que é como o Agendor
- * registra uma nota simples de texto.
  *
  * @param {object} params
  * @param {number} params.organizationId
