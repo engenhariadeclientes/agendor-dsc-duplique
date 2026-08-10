@@ -44,6 +44,36 @@ async function buscarConsultorPorTelefone(telefoneConsultor) {
 }
 
 /**
+ * Formata um telefone no padrão exigido pelo Agendor: "(DD) 9XXXX-XXXX" ou "(DD) XXXX-XXXX".
+ * Remove DDI (55) quando presente e remonta.
+ */
+function formatarTelefoneAgendor(telefone) {
+  if (!telefone) return undefined;
+
+  let digitos = String(telefone).replace(/\D/g, "");
+
+  if (digitos.startsWith("55") && digitos.length > 11) {
+    digitos = digitos.slice(2);
+  }
+
+  const ddd = digitos.slice(0, 2);
+  const resto = digitos.slice(2);
+
+  if (resto.length === 9) {
+    return `(${ddd}) ${resto.slice(0, 5)}-${resto.slice(5)}`;
+  }
+  if (resto.length === 8) {
+    return `(${ddd}) ${resto.slice(0, 4)}-${resto.slice(4)}`;
+  }
+
+  return telefone;
+}
+
+// Campo confirmado via /debug em 10/08/2026: "leadOrigin" existe só na Empresa (organization).
+const FONTE_LEAD_FIELD = "leadOrigin";
+const FONTE_LEAD_VALOR = "Redes Sociais";
+
+/**
  * Cria uma nova Empresa no Agendor vinculada ao consultor responsável.
  *
  * @param {object} params
@@ -56,17 +86,19 @@ async function buscarConsultorPorTelefone(telefoneConsultor) {
  */
 async function criarEmpresa({ nome, telefone, email, regiao, consultorId }) {
   const client = agendorClient();
+  const telefoneFormatado = formatarTelefoneAgendor(telefone);
   const payload = {
     name: nome,
     description: regiao ? `Lead de anúncio - Região ${regiao}` : "Lead de anúncio",
     author: consultorId,
     ownerUser: consultorId,
     contact: {
-      mobile: telefone,
+      mobile: telefoneFormatado,
       email: email || undefined,
-      whatsapp: telefone,
+      whatsapp: telefoneFormatado,
     },
     allowedUsers: [consultorId],
+    [FONTE_LEAD_FIELD]: FONTE_LEAD_VALOR,
   };
 
   const { data } = await client.post("/organizations", payload);
@@ -92,7 +124,6 @@ async function criarNegocio({ organizationId, titulo, consultorId }) {
     author: consultorId,
     ownerUser: consultorId,
     dealStatusText: "ongoing",
-    source: "Redes Sociais",
   };
 
   const { data } = await client.post(`/organizations/${organizationId}/deals`, payload);
