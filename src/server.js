@@ -12,6 +12,37 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 8080;
 
+const EMAIL_REGEX = /^[^\s@{}]+@[^\s@{}]+\.[^\s@{}]+$/;
+
+/**
+ * O BotConversa (Júlia) às vezes manda o valor de uma variável ainda envolto
+ * em chaves, ex.: "{leocalixto2018@gmail.com}" em vez de
+ * "leocalixto2018@gmail.com", ou o próprio placeholder não resolvido, ex.:
+ * "{RESUMO CONVERSA}". Isso fazia o Agendor rejeitar o e-mail ("Contact email
+ * is invalid") e cancelar a criação do lead inteiro. Aqui a gente limpa esse
+ * envelope antes de repassar pro Agendor.
+ */
+function limparValorTemplate(valor) {
+  if (typeof valor !== "string") return valor;
+  let v = valor.trim();
+  if (v.startsWith("{") && v.endsWith("}")) {
+    v = v.slice(1, -1).trim();
+  }
+  return v;
+}
+
+function limparEmail(valor) {
+  const limpo = limparValorTemplate(valor);
+  if (!limpo || !EMAIL_REGEX.test(limpo)) return undefined;
+  return limpo;
+}
+
+// placeholder de template não resolvido, ex.: "RESUMO CONVERSA" (só maiúsculas
+// e espaços, sem nenhuma letra minúscula) — não é um resumo real
+function pareceTokenNaoResolvido(valor) {
+  return typeof valor === "string" && valor.length > 0 && valor === valor.toUpperCase() && /[A-ZÀ-Ú]/.test(valor);
+}
+
 app.get("/ping", (req, res) => {
   res.json({ ok: true, service: "agendor-dsc-duplique" });
 });
@@ -32,12 +63,13 @@ app.get("/ping", (req, res) => {
  */
 app.post("/webhook/novo-negocio", async (req, res) => {
   const body = req.body || {};
-  const nome = body.nome_completo;
-  const telefone = body.telefone;
-  const email = body.Email;
-  const regiao = body["REGIÃO"];
-  const telefoneConsultor = body.Tell_consultor;
-  const resumoConversa = body.resumo_conversa;
+  const nome = limparValorTemplate(body.nome_completo);
+  const telefone = limparValorTemplate(body.telefone);
+  const email = limparEmail(body.Email);
+  const regiao = limparValorTemplate(body["REGIÃO"]);
+  const telefoneConsultor = limparValorTemplate(body.Tell_consultor);
+  const resumoConversaBruto = limparValorTemplate(body.resumo_conversa);
+  const resumoConversa = pareceTokenNaoResolvido(resumoConversaBruto) ? undefined : resumoConversaBruto;
 
   console.log("Payload recebido:", body);
 
